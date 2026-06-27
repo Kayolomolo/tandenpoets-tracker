@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tandenpoets">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
+  <title>Tandenpoets Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+      background: #0a0a1a;
+      color: #fff;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 20px 16px env(safe-area-inset-bottom, 20px);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .header {
+      text-align: center;
+      padding: 16px 0 8px;
+    }
+    .tooth {
+      font-size: 56px;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .tooth.pop { transform: scale(1.3) rotate(8deg); }
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 4px;
+      background: linear-gradient(135deg, #818cf8, #22d3ee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .streak-card {
+      background: linear-gradient(135deg, #1e1b4b, #164e63);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      margin: 16px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .streak-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(129,140,248,0.1) 0%, transparent 70%);
+    }
+    .streak-num {
+      font-size: 64px;
+      font-weight: 900;
+      line-height: 1;
+      position: relative;
+    }
+    .streak-label {
+      font-size: 14px;
+      color: #a5b4fc;
+      margin-top: 6px;
+      position: relative;
+    }
+
+    .level-section {
+      margin: 12px 0;
+    }
+    .level-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .level-bar {
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .level-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #818cf8, #22d3ee);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .motivation {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 16px;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+      line-height: 1.4;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin: 8px 0;
+    }
+    .btn {
+      flex: 1;
+      padding: 18px 12px;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-brush {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: white;
+      box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+    }
+    .btn-floss {
+      background: linear-gradient(135deg, #0891b2, #22d3ee);
+      color: white;
+      box-shadow: 0 4px 15px rgba(8,145,178,0.3);
+    }
+    .btn.done {
+      background: #1e293b;
+      color: #64748b;
+      box-shadow: none;
+    }
+
+    .period-toggle {
+      display: flex;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 4px;
+      margin: 16px 0 8px;
+    }
+    .period-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #64748b;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .period-btn.active {
+      background: #334155;
+      color: #fff;
+    }
+
+    .week {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin: 16px 0;
+    }
+    .day {
+      flex: 1;
+      max-width: 48px;
+      text-align: center;
+    }
+    .day-label {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .day-label.today {
+      color: #818cf8;
+    }
+    .day-dots {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #1e293b;
+      transition: background 0.3s;
+    }
+    .dot.brush-done { background: #818cf8; }
+    .dot.floss-done { background: #22d3ee; }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 4px 0 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .tip {
+      font-size: 12px;
+      color: #64748b;
+      text-align: center;
+      padding: 12px;
+      line-height: 1.5;
+      border-top: 1px solid #1e293b;
+      margin-top: 8px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .stat-card {
+      flex: 1;
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 22px;
+      font-weight: 800;
+      color: #e2e8f0;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .confetti {
+      position: fixed;
+      pointer-events: none;
+      z-index: 100;
+      font-size: 24px;
+      animation: fall 1.5s ease-out forwards;
+    }
+    @keyframes fall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translateY(120px) rotate(360deg) scale(0.3); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="tooth" id="tooth">🦷</div>
+    <div class="title">Tandenpoets Tracker</div>
+  </div>
+
+  <div class="streak-card">
+    <div class="streak-num" id="streak">0</div>
+    <div class="streak-label">dagen streak 🔥</div>
+  </div>
+
+  <div class="level-section">
+    <div class="level-header">
+      <span id="levelText">Level 1 — Beginner</span>
+      <span id="levelNext"></span>
+    </div>
+    <div class="level-bar"><div class="level-fill" id="levelFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="motivation" id="msg"></div>
+
+  <div class="period-toggle">
+    <button class="period-btn active" id="amBtn" onclick="setPeriod('am')">☀️ Ochtend</button>
+    <button class="period-btn" id="pmBtn" onclick="setPeriod('pm')">🌙 Avond</button>
+  </div>
+
+  <div class="buttons">
+    <button class="btn btn-brush" id="brushBtn" onclick="logAction('brush')">🪥 Poetsen</button>
+    <button class="btn btn-floss" id="flossBtn" onclick="logAction('floss')">🧵 Rageren</button>
+  </div>
+
+  <div class="week" id="week"></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div> Gepoetst</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div> Geragerd</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num" id="totalDays">0</div>
+      <div class="stat-label">dagen totaal</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="perfectDays">0</div>
+      <div class="stat-label">perfecte dagen</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="bestStreak">0</div>
+      <div class="stat-label">beste streak</div>
+    </div>
+  </div>
+
+  <div class="tip" id="tip"></div>
+
+<script>
+const KEY = 'teeth_tracker_v3';
+const DAYS = ['zo','ma','di','wo','do','vr','za'];
+let currentPeriod = new Date().getHours() < 14 ? 'am' : 'pm';
+
+const LEVELS = [
+  { name: "Beginner", emoji: "🌱", min: 0 },
+  { name: "Regelmatig", emoji: "🌿", min: 3 },
+  { name: "Consistent", emoji: "🌳", min: 7 },
+  { name: "Tandarts-favoriet", emoji: "⭐", min: 14 },
+  { name: "Mondhygiëne-held", emoji: "🏆", min: 21 },
+  { name: "Legendarisch", emoji: "👑", min: 30 },
+];
+
+const MORNING_MSGS = [
+  "Goedemorgen! ☀️ Begin je dag met een frisse lach!",
+  "Nieuwe dag, nieuwe kans! Poetsen & rageren! 🌅",
+  "Je tanden wachten op je — maak ze blij! 😁",
+];
+const EVENING_MSGS = [
+  "Niet overslaan vanavond! Je streak staat op het spel! 🔥",
+  "Nog even 2 minuutjes — dan slaap je met een schone mond! 🌙",
+  "Je toekomstige zelf bedankt je morgenochtend! 💪",
+  "Bacteriën willen dat je het overslaat. Laat ze niet winnen! 🦠",
+  "Bijna klaar voor vandaag — finish strong! 🏁",
+];
+const DONE_MSGS = [
+  "💪 Yes! Goed bezig — je tanden zijn je dankbaar!",
+  "🌟 Champion! Weer een sessie voltooid!",
+  "✨ Stralende lach in aanbouw! Keep going!",
+  "🏆 Tandarts wordt trots op je!",
+  "💎 Diamanten tanden incoming!",
+  "😁 Boom! Schone tanden, schoon gevoel!",
+];
+const TIPS = [
+  "💡 Zet je tandenborstel naast je telefoon — dan vergeet je het niet!",
+  "💡 Poets minimaal 2 minuten — gebruik een timer of liedje.",
+  "💡 Rageren bereikt 40% van je tandoppervlak dat poetsen mist!",
+  "💡 Vervang je tandenborstel elke 3 maanden.",
+  "💡 Begin met rageren, dan poetsen — dat werkt het beste!",
+  "💡 Poets niet te hard — zachte rondjes zijn het effectiefst.",
+  "💡 Wacht 30 min na eten met poetsen — zuur verzwakt je glazuur.",
+  "💡 Poets ook je tong — daar zitten veel bacteriën!",
+];
+
+function getData() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
+  catch { return {}; }
+}
+function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+function today() { return new Date().toISOString().slice(0,10); }
+function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
+function getStreak(data) {
+  let streak = 0;
+  let d = new Date();
+  const t = today();
+  const entry = data[t];
+  if (entry && (entry.am_brush || entry.pm_brush)) {
+    streak = 1;
+    d.setDate(d.getDate()-1);
+  } else {
+    d.setDate(d.getDate()-1);
+  }
+  while(true) {
+    const key = d.toISOString().slice(0,10);
+    const e = data[key];
+    if (e && (e.am_brush || e.pm_brush)) {
+      streak++;
+      d.setDate(d.getDate()-1);
+    } else break;
+  }
+  return streak;
+}
+
+function getStats(data) {
+  let totalDays = 0, perfectDays = 0, bestStreak = 0, currentRun = 0;
+  const keys = Object.keys(data).sort();
+  for (const k of keys) {
+    const e = data[k];
+    if (e.am_brush || e.pm_brush) {
+      totalDays++;
+      currentRun++;
+      bestStreak = Math.max(bestStreak, currentRun);
+    } else {
+      currentRun = 0;
+    }
+    if (e.am_brush && e.am_floss && e.pm_brush && e.pm_floss) perfectDays++;
+  }
+  return { totalDays, perfectDays, bestStreak };
+}
+
+function getLevel(streak) {
+  let lvl = LEVELS[0], idx = 0;
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (streak >= LEVELS[i].min) { lvl = LEVELS[i]; idx = i; }
+  }
+  return { ...lvl, idx };
+}
+
+function confetti(x, y) {
+  const emojis = ['✨','🌟','⭐','💫','🎉','🦷','😁'];
+  for (let i = 0; i < 8; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.textContent = pick(emojis);
+    el.style.left = (x + (Math.random()-0.5)*80) + 'px';
+    el.style.top = (y - 20) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1600);
+  }
+}
+
+function setPeriod(p) {
+  currentPeriod = p;
+  document.getElementById('amBtn').classList.toggle('active', p === 'am');
+  document.getElementById('pmBtn').classList.toggle('active', p === 'pm');
+  render();
+}
+
+function logAction(type) {
+  const data = getData();
+  const t = today();
+  if (!data[t]) data[t] = {};
+  const key = currentPeriod + '_' + type;
+  if (data[t][key]) return;
+  data[t][key] = true;
+  save(data);
+
+  const tooth = document.getElementById('tooth');
+  tooth.classList.add('pop');
+  setTimeout(() => tooth.classList.remove('pop'), 400);
+
+  const btn = type === 'brush' ? document.getElementById('brushBtn') : document.getElementById('flossBtn');
+  const rect = btn.getBoundingClientRect();
+  confetti(rect.left + rect.width/2, rect.top);
+
+  render();
+}
+
+function render() {
+  const data = getData();
+  const t = today();
+  const entry = data[t] || {};
+  const streak = getStreak(data);
+  const stats = getStats(data);
+  const lvl = getLevel(streak);
+
+  document.getElementById('streak').textContent = streak;
+  document.getElementById('totalDays').textContent = stats.totalDays;
+  document.getElementById('perfectDays').textContent = stats.perfectDays;
+  document.getElementById('bestStreak').textContent = stats.bestStreak;
+
+  const nextLvl = LEVELS[lvl.idx + 1];
+  document.getElementById('levelText').textContent = `${lvl.emoji} Level ${lvl.idx+1} — ${lvl.name}`;
+  if (nextLvl) {
+    document.getElementById('levelNext').textContent = `${nextLvl.emoji} ${nextLvl.name} in ${nextLvl.min - streak} dagen`;
+    const pct = ((streak - lvl.min) / (nextLvl.min - lvl.min)) * 100;
+    document.getElementById('levelFill').style.width = Math.min(pct, 100) + '%';
+  } else {
+    document.getElementById('levelNext').textContent = 'MAX!';
+    document.getElementById('levelFill').style.width = '100%';
+  }
+
+  const brushKey = currentPeriod + '_brush';
+  const flossKey = currentPeriod + '_floss';
+  const brushBtn = document.getElementById('brushBtn');
+  const flossBtn = document.getElementById('flossBtn');
+
+  if (entry[brushKey]) {
+    brushBtn.className = 'btn done';
+    brushBtn.textContent = '✅ Gepoetst';
+  } else {
+    brushBtn.className = 'btn btn-brush';
+    brushBtn.textContent = '🪥 Poetsen';
+  }
+  if (entry[flossKey]) {
+    flossBtn.className = 'btn done';
+    flossBtn.textContent = '✅ Geragerd';
+  } else {
+    flossBtn.className = 'btn btn-floss';
+    flossBtn.textContent = '🧵 Rageren';
+  }
+
+  const msg = document.getElementById('msg');
+  const allDone = entry[brushKey] && entry[flossKey];
+  const hour = new Date().getHours();
+  if (allDone) {
+    msg.textContent = pick(DONE_MSGS);
+  } else if (currentPeriod === 'pm' || hour >= 20) {
+    msg.textContent = pick(EVENING_MSGS);
+  } else {
+    msg.textContent = pick(MORNING_MSGS);
+  }
+
+  // Week view
+  const weekEl = document.getElementById('week');
+  weekEl.innerHTML = '';
+  for (let i = 6; i >= 0; i--) {
+    const dd = new Date();
+    dd.setDate(dd.getDate() - i);
+    const key = dd.toISOString().slice(0,10);
+    const e = data[key] || {};
+    const isToday = i === 0;
+    const hasBrush = e.am_brush || e.pm_brush;
+    const hasFloss = e.am_floss || e.pm_floss;
+    const div = document.createElement('div');
+    div.className = 'day';
+    div.innerHTML = `
+      <div class="day-label ${isToday ? 'today' : ''}">${DAYS[dd.getDay()]}</div>
+      <div class="day-dots">
+        <div class="dot ${hasBrush ? 'brush-done' : ''}"></div>
+        <div class="dot ${hasFloss ? 'floss-done' : ''}"></div>
+      </div>
+    `;
+    weekEl.appendChild(div);
+  }
+
+  document.getElementById('tip').textContent = pick(TIPS);
+}
+
+// Auto-detect period
+if (currentPeriod === 'pm') {
+  document.getElementById('amBtn').classList.remove('active');
+  document.getElementById('pmBtn').classList.add('active');
+}
+render();
+</script>
+</body>
+</html>
